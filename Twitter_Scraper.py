@@ -2,10 +2,13 @@ import datetime
 import pandas as pd
 import snscrape.modules.twitter as sntwitter
 import streamlit as st
+from pymongo import MongoClient
 
 st.title("Twitter Scraper")
 name = st.text_input("Enter Keyword or Hashtag")
 result = []
+
+tweet_range = st.slider("Number of tweets to be Scraped", min_value=1, max_value=1000, value=100)
 
 col1, col2 = st.columns(2)
 with col1:
@@ -13,9 +16,7 @@ with col1:
 with col2:
     to_date = st.date_input("To Date")
 
-tweet_range = st.text_input("Number of tweets to be Scraped", value=1000)
-
-if st.button('Submit'):
+if st.button('Submit and Upload'):
     st.success(name)
     result.append(name)
     result.append(from_date)
@@ -33,8 +34,9 @@ def scrape_data(result):
                 [tweet.date, tweet.id, tweet.url, tweet.content, tweet.user.username, tweet.replyCount,
                  tweet.retweetCount, tweet.lang, tweet.source, tweet.likeCount])
 
-        tweets_df1 = pd.DataFrame(tweets_list1, columns=['Datetime', 'Tweet_Id', 'URL', 'Content', 'Username', 'Reply_Count',
-                                                         'Retweet_Count', 'Language', 'Source', 'Like_Count'])
+        tweets_df1 = pd.DataFrame(tweets_list1, columns=['Datetime', 'Tweet_Id', 'URL', 'Content', 'Username',
+                                                         'Reply_Count', 'Retweet_Count', 'Language', 'Source',
+                                                         'Like_Count'])
         return tweets_df1
     except (ValueError, IndexError):
         pass
@@ -43,6 +45,12 @@ dataframe = scrape_data(result)
 st.dataframe(dataframe)
 
 try:
+    dictionary1 = dataframe.to_dict(orient='records')
+    client = MongoClient("mongodb://localhost:27017")
+    db = client["Twitter_Data"]
+    collection = db["@" + name + " #" + str(tweet_range)]
+    collection.insert_many(dictionary1)
+
     csv_file = dataframe.to_csv().encode('utf-8')
     json_file = dataframe.to_json()
 
