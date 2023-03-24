@@ -16,7 +16,7 @@ with col1:
 with col2:
     to_date = st.date_input("To Date")
 
-if st.button('Submit and Upload'):
+if st.button('Submit'):
     st.success(name)
     result.append(name)
     result.append(from_date)
